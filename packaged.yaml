@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'serverless-api-proxy
+
+  api reverse proxy into vpc resources
+
+  '
+Globals:
+  Function:
+    Timeout: 30
+Resources:
+  Proxy:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://net.devts.samcode/5286c154f2dbee9433653169e463896b
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /
+            Method: any
+      Environment:
+        Variables:
+          PARAM1: VALUE
+Outputs:
+  ProxyApigwURL:
+    Description: API Gateway endpoint URL for Prod environment for Proxy Function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/Proxy/proxy
+  ProxyFunction:
+    Description: Proxy Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - ProxyFunction
+      - Arn

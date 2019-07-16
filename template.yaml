@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    serverless-api-proxy
+    api reverse proxy into vpc resources
+Parameters:
+    Stage:
+        Type: String
+    ProjectName:
+        Type: String
+    PythonVersion:
+        Type: String
+    AuthorizationPath:
+        Type: String
+    KMSKeyID:
+        Type: String
+    Upstream:
+        Type: String
+    SubnetIds:
+        Type: List<AWS::EC2::Subnet::Id>
+    SecurityGroupIds:
+        Type: List<AWS::EC2::SecurityGroup::Id>
+
+Globals:
+    Function:
+        Timeout: 30
+        Layers:
+        - !Ref 'Runtime'
+
+Resources:
+    Runtime:
+        Type: AWS::Serverless::LayerVersion
+        Properties:
+            RetentionPolicy: Retain
+            LayerName: !Sub '${ProjectName}-layer-${Stage}'
+            ContentUri: runtime/
+            CompatibleRuntimes:
+                - python3.7
+
+    Handler:
+        Type: AWS::Serverless::Function 
+        Properties:
+            FunctionName: !Sub '${ProjectName}-handler-${Stage}'
+            CodeUri: src/
+            Handler: proxy.app.proxy_handler
+            Runtime: python3.7
+            Tracing: Active  
+            Events:
+                Root:
+                    Type: Api 
+                    Properties:
+                        RestApiId: !Ref ProxyApi
+                        Path: /
+                        Method: any 
+                Catchall:
+                    Type: Api 
+                    Properties:
+                        RestApiId: !Ref ProxyApi
+                        Path: /{proxy+}
+                        Method: any 
+            Environment:
+                Variables:
+                    UPSTREAM: !Ref Upstream
+            VpcConfig:
+                SecurityGroupIds: !Ref SecurityGroupIds
+                SubnetIds:  !Ref SubnetIds
+            Policies:
+                - VPCAccessPolicy: {}
+
+    Authorizer:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Sub '${ProjectName}-authorizer-${Stage}'
+            CodeUri: src/
+            Handler: proxy.app.auth_handler
+            Runtime: python3.7
+            Tracing: Active
+            Environment:
+                Variables:
+                    SSM_AUTHORIZATION_PATH: !Sub '/${ProjectName}/${Stage}/${AuthorizationPath}'
+            Policies:
+                - SSMParameterReadPolicy:
+                    ParameterName: !Sub '${ProjectName}/${Stage}/${AuthorizationPath}*'
+                - KMSDecryptPolicy:
+                    KeyId: !Ref KMSKeyID
+                - VPCAccessPolicy: {}
+
+
+    ProxyApi:
+        Type: AWS::Serverless::Api
+        Properties:
+            StageName: !Ref Stage
+            Auth:
+                DefaultAuthorizer: BasicAuth
+                Authorizers:
+                    BasicAuth:
+                        FunctionPayloadType: TOKEN
+                        FunctionArn: !GetAtt Authorizer.Arn
+                        Identity:
+                            Headers:
+                                - Authorization
+            BinaryMediaTypes:
+                - '*~1*'
+            GatewayResponses:
+                UNAUTHORIZED:
+                    StatusCode: 401 
+                    ResponseParameters:
+                        Headers:
+                            gatewayresponse.header.WWW-Authenticate: "'Basic'"
+
+    # GatewayResponse:
+    #   Type: 'AWS::ApiGateway::GatewayResponse'
+    #   Properties:
+    #     ResponseParameters:
+    #       gatewayresponse.header.WWW-Authenticate: "'Basic'"
+    #     ResponseType: UNAUTHORIZED
+    #     RestApiId: !Ref 'ProxyApi'
+    #     StatusCode: '401'
+
+Outputs:
+    ProxyApigwURL:
+      Description: "API Gateway endpoint URL for Prod environment for Proxy Function"
+      Value: !Sub "https://${ProxyApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+
+    Handler:
+      Description: "Proxy Lambda Function ARN"
+      Value: !GetAtt Handler.Arn
+
