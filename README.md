@@ -15,3 +15,9 @@ source venv/bin/activate
 ```bash
 pip install --upgrade aws-sam-cli
 ```
+
+Until SAM cli is not [yet including 1.11.0](https://github.com/awslabs/aws-sam-cli/issues/1198) also run
+
+```bash
+pip install --upgrade aws-sam-translator --force
+```
