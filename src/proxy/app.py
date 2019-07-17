@@ -27,10 +27,6 @@ def proxy_handler(event, context):
     log.info(dict(**response.headers))
     buffer = io.BytesIO()
     raw = response.raw
-    # for _ in range(0, int(response.headers['content-length']), 4096):
-    #     chunk = raw.read(4096)
-    #     buffer.write(chunk)
-
 
     chunk = raw.read(4096)
     while len(chunk)>0:
