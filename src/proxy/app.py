@@ -14,6 +14,13 @@ log = logging.getLogger()
 patch_all()
 ssm = boto3.client('ssm')
 
+def get_response_buffer(raw):
+    buffer = io.BytesIO()
+    chunk = raw.read(4096)
+    while len(chunk)>0:
+        buffer.write(chunk)
+        chunk = raw.read(4096)
+    return buffer
 
 def proxy_handler(event, context):
     aws_lambda_logging.setup(
@@ -24,15 +31,9 @@ def proxy_handler(event, context):
 
     log.info(event)
     response = forward_request(event)
-    log.info(dict(**response.headers))
-    buffer = io.BytesIO()
-    raw = response.raw
-
-    chunk = raw.read(4096)
-    while len(chunk)>0:
-        buffer.write(chunk)
-        chunk = raw.read(4096)
-
+    log.info(dict(**response.headers)) 
+    buffer = get_response_buffer(response.raw)
+    
     response.headers.pop('content-length','')
     response.headers.pop('accept-ranges','')
     
@@ -45,6 +46,15 @@ def proxy_handler(event, context):
     log.info(result)
     return result
 
+def sanitize_request_headers(headers):
+    # set upstream host header
+    headers['Host'] = re.match('https?://([^/]+)',os.environ['UPSTREAM'])[1]
+    # do not encode if not requested
+    if not headers.get('Accept-Encoding'):
+        headers['Accept-Encoding'] = ''
+    # do not pass authorization header to upstream
+    headers.pop('Authorization','')
+    return headers
 
 @xray_recorder.capture()
 def forward_request(event):
@@ -56,13 +66,7 @@ def forward_request(event):
     xray_subsegment.put_annotation("url", url) 
     xray_subsegment.put_annotation("method", method) 
 
-    # set upstream host header
-    headers['Host'] = re.match('https?://([^/]+)',os.environ['UPSTREAM'])[1]
-    # do not encode if not requested
-    if not headers.get('Accept-Encoding'):
-        headers['Accept-Encoding'] = ''
-    # do not pass authorization header to upstream
-    headers.pop('Authorization','')
+    headers = sanitize_request_headers(headers)
 
     # handle post payload 
     body = event.get('body')
@@ -78,7 +82,6 @@ def forward_request(event):
         data = body if body else '' 
     )
     return response
-
 
 def auth_handler(event, context):
     aws_lambda_logging.setup(
