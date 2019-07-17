@@ -83,7 +83,6 @@ Resources:
                     ParameterName: !Sub '${ProjectName}/${Stage}/${AuthorizationPath}*'
                 - KMSDecryptPolicy:
                     KeyId: !Ref KMSKeyID
-                - VPCAccessPolicy: {}
 
 
     ProxyApi:
@@ -107,15 +106,6 @@ Resources:
                     ResponseParameters:
                         Headers:
                             gatewayresponse.header.WWW-Authenticate: "'Basic'"
-
-    # GatewayResponse:
-    #   Type: 'AWS::ApiGateway::GatewayResponse'
-    #   Properties:
-    #     ResponseParameters:
-    #       gatewayresponse.header.WWW-Authenticate: "'Basic'"
-    #     ResponseType: UNAUTHORIZED
-    #     RestApiId: !Ref 'ProxyApi'
-    #     StatusCode: '401'
 
 Outputs:
     ProxyApigwURL:

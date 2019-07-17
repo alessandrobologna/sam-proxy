@@ -41,7 +41,7 @@ build: ## run sam build
 
 package: ## run sam package
 	@printf "> \033[36mPackaging Application...\033[0m\n"
-	aws cloudformation package --s3-bucket $(CODE_BUCKET) --template-file .aws-sam/build/template.yaml --output-template-file .aws-sam/build/packaged.yaml >/dev/null	
+	@aws cloudformation package --s3-bucket $(CODE_BUCKET) --template-file .aws-sam/build/template.yaml --output-template-file .aws-sam/build/packaged.yaml >/dev/null	
 	@printf "> \033[36mCompleted\033[0m\n"
 
 deploy: ## run sam deploy
