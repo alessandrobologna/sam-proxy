@@ -45,8 +45,26 @@ SECURITY_GROUPS|A comma delimited list of security groups for the lambda funtion
 
 ## Deployment
 
+Run `make` to get a list of make targets:
+
+```bash
+$ make
+Commands:
+all                            build all (including runtime)
+bucket                         creates the bucket for the lambda code
+build                          run sam build
+clean                          removes build artifacts
+deploy                         run sam deploy
+package                        run sam package
+redeploy                       build, package and deploy
+runtime                        build the lambda runtime layer
+secret                         show command line to create a secret for this deployment
+```
+
 Run the `make bucket` target to create an s3 bucket for the code deployment. It needs to be done only once, and it will create a bucket named <aws-account-number>.sam.code.
 
 After exporting the required environment variables, run `make all` to build the base lambda layer, and deploy to your AWS account. For subsequent deployments you can just run `make redeploy`
+
+To create a basic auth credentials pair, run the `make secret` target. It will just display an example aws cli command line that you can run to set username and pasword. Each deployment can have multiple user names and passwords.
 
 
