@@ -98,6 +98,7 @@ Resources:
                         Identity:
                             Headers:
                                 - Authorization
+                            ReauthorizeEvery: 60
             BinaryMediaTypes:
                 - '*~1*'
             GatewayResponses:
