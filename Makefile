@@ -39,7 +39,7 @@ build: ## run sam build
 
 package: ## run sam package
 	@printf "> \033[36mPackaging Application...\033[0m\n"
-	@aws cloudformation package --s3-bucket $(CODE_BUCKET) --template-file .aws-sam/build/template.yaml --output-template-file .aws-sam/build/packaged.yaml >/dev/null	
+	@aws cloudformation package --s3-bucket $(CODE_BUCKET) --template-file .aws-sam/build/template.yaml --output-template-file .aws-sam/build/packaged.yaml >/dev/null
 	@printf "> \033[36mCompleted\033[0m\n"
 
 deploy: ## run sam deploy
@@ -66,3 +66,13 @@ all: runtime build package deploy ## build all (including runtime)
 secret: ## show command line to create a secret for this deployment
 	@printf " \033[33maws ssm put-parameter --type SecureString --name \'/$(PROJECT)/$(STAGE)/$(AUTHORIZATION_PATH)<user>\' --value \'<password>\'\033[0m\n"
 
+logs: #view the logs of this function
+	@sam logs -n Handler --stack-name cf-stack-$(PROJECT)-$(STAGE)
+
+tail-logs: #tail the logs of this function
+	@sam logs -n Handler --stack-name cf-stack-$(PROJECT)-$(STAGE) --tail
+
+undeploy: ## run aws cloudformation delete stack
+	@aws cloudformation delete-stack --stack-name cf-stack-$(PROJECT)-$(STAGE) &&\
+	aws cloudformation wait stack-delete-complete --stack-name cf-stack-$(PROJECT)-$(STAGE)
+	@printf " \033[33mAll resources undeployed!\033[0m\n"
