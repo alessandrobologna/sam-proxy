@@ -33,6 +33,7 @@ pip install --upgrade aws-sam-translator --force
 
 ## Configuration
 Some environment variables need to be configured before deployment:
+
 NAME|DESCRIPTION|DEFAULT
 ---|---|---
 STAGE|an identifier for the deployment stage, such as "dev" or "prod"|dev
