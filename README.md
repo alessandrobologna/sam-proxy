@@ -5,7 +5,19 @@ use lambda/apigateway to implement a simple basic auth/reverse proxy into a VPC 
 ## Use case
 Often is necessary to provide access to a third party SaaS provider to a private service running inside a VPC, and IP whitelisting is not an option because the SaaS provider can be using many CIDR blocks.
 A simple solution is to run something like Nginx in a reverse proxy configuration and with some time of basic auth layer in front of it.
-This simple implementation instead does it as a serverless service exposed through the API gateway.
+This simple implementation instead does it as a serverless service exposed through the API gateway. It also can be used simply to provide a well known fixed IP for whitelisting access to the target provider, as it will traverse the VPC NAT gateway EIP to reach the remote SaaS.
+
+The first scenario (access to internal service)
+```
+Saas -> ApiGateway (Custom Authorizer) -> Proxy Lambda -> Internal Service
+```
+
+The second scenario (access to external service from known IP)
+```
+Saas -> ApiGateway (Custom Authorizer) -> Proxy Lambda -> NAT -> Other Saas
+```
+
+
 
 ## Setup
 
